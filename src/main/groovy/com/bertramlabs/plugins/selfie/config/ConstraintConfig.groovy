@@ -3,6 +3,7 @@ package com.bertramlabs.plugins.selfie.config
 import com.bertramlabs.plugins.selfie.ContentTypeConstraint
 import com.bertramlabs.plugins.selfie.FileSizeConstraint
 import groovy.util.logging.Slf4j
+import jakarta.annotation.PostConstruct
 import org.grails.datastore.gorm.validation.constraints.eval.ConstraintsEvaluator
 import org.grails.datastore.gorm.validation.constraints.eval.DefaultConstraintEvaluator
 import org.grails.datastore.gorm.validation.constraints.registry.DefaultValidatorRegistry
@@ -10,7 +11,6 @@ import org.grails.datastore.mapping.validation.ValidatorRegistry
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 
-import javax.annotation.PostConstruct
 
 @Configuration
 @Slf4j
