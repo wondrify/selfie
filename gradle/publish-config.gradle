@@ -1,0 +1,13 @@
+import org.apache.grails.gradle.publish.GrailsPublishExtension
+
+extensions.configure(GrailsPublishExtension) {
+	// Explicit `it` is required here
+	it.artifactId = findProperty('pomArtifactId') ?: project.name
+	it.githubSlug = 'wondrify/karman-core'
+	it.license.name = 'Apache-2.0'
+	it.title = findProperty('pomTitle') ?: project.name
+	it.desc = findProperty('pomDescription') ?: "JVM Karman File/Object Abstraction Library"
+	it.developers = findProperty('pomDevelopers') as Map<String, String> ?: [davydotcom: 'David Estes']
+	it.publicationName = findProperty('pomMavenPublicationName') ?: 'maven'
+	it.addComponents = project.name != 'karman-gradle'
+}
