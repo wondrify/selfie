@@ -16,7 +16,7 @@ Add The Following to your `build.gradle`:
 
 ```groovy
 dependencies {
-    compile 'com.bertramlabs.plugins:selfie:2.0.1'
+    implementation 'com.bertramlabs.plugins:selfie:7.0.0-SNAPSHOT'
 }
 ```
 

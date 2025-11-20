@@ -27,6 +27,9 @@ sourceSets {
 repositories {
   mavenLocal()
   mavenCentral()
+  maven {
+    url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+  }
 }
 
 dependencies {
@@ -36,11 +39,14 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-tomcat"
     implementation "org.apache.grails:grails-core"
     implementation "org.apache.grails:grails-web-boot"
+    implementation "org.apache.grails:grails-databinding"
+    implementation "org.apache.grails:grails-services"
     implementation platform("org.apache.grails:grails-bom:$grailsVersion")
     api 'org.imgscalr:imgscalr-lib:4.2'
     api "cloud.wondrify:karman-core:$karmanVersion"
     api "cloud.wondrify:karman-grails:$karmanVersion"
-
+    api "org.apache.grails:grails-domain-class"
+    api "org.apache.grails:grails-data-hibernate5"
     testImplementation "org.apache.grails:grails-testing-support-datamapping"
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.apache.grails:grails-testing-support-web"
