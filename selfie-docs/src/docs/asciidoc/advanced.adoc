@@ -1,0 +1,720 @@
+= Advanced Usage
+:toc: left
+:toclevels: 3
+:source-highlighter: coderay
+:icons: font
+
+== Image Style Options
+
+Selfie provides powerful image resizing capabilities through the `styles` configuration in your domain's `attachmentOptions`.
+
+=== Resize Modes
+
+==== fit
+
+The `fit` mode scales the image to fit within the specified dimensions while maintaining aspect ratio. The resulting image will be no larger than the specified width and height:
+
+[source,groovy]
+----
+static attachmentOptions = [
+    photo: [
+        styles: [
+            thumb: [width: 150, height: 150, mode: 'fit']
+        ]
+    ]
+]
+----
+
+If you upload a 1000x500 image with the above configuration, the result will be 150x75 (maintaining aspect ratio).
+
+==== scale
+
+The `scale` mode scales the image proportionally based on the width parameter only:
+
+[source,groovy]
+----
+static attachmentOptions = [
+    photo: [
+        styles: [
+            medium: [width: 500, mode: 'scale']
+        ]
+    ]
+]
+----
+
+==== crop
+
+The `crop` mode creates a centered crop of the specified dimensions:
+
+[source,groovy]
+----
+static attachmentOptions = [
+    photo: [
+        styles: [
+            square: [width: 200, height: 200, mode: 'crop']
+        ]
+    ]
+]
+----
+
+This is useful for creating uniform thumbnails like profile pictures.
+
+=== Multiple Styles
+
+You can define multiple styles for a single attachment:
+
+[source,groovy]
+----
+class Product {
+    String name
+    Attachment image
+
+    static attachmentOptions = [
+        image: [
+            styles: [
+                thumbnail: [width: 100, height: 100, mode: 'crop'],
+                small: [width: 300, mode: 'scale'],
+                medium: [width: 600, mode: 'scale'],
+                large: [width: 1200, mode: 'scale']
+            ]
+        ]
+    ]
+
+    static embedded = ['image']
+
+    static constraints = {
+        image contentType: ['png', 'jpg', 'jpeg', 'webp']
+    }
+}
+----
+
+=== Accessing Different Styles
+
+Each style generates a separate file that you can access:
+
+[source,groovy]
+----
+def product = Product.get(1)
+
+// Original image URL
+println product.image.url
+
+// Thumbnail URL
+println product.image.thumbnail.url
+
+// Medium size URL
+println product.image.medium.url
+----
+
+In a GSP view:
+
+[source,xml]
+----
+<img src="${product.image.thumbnail.url}" alt="Thumbnail">
+<img src="${product.image.medium.url}" alt="Medium">
+----
+
+== Content Type Validation
+
+Restrict which file types can be uploaded using the `contentType` constraint:
+
+=== Single Content Type
+
+[source,groovy]
+----
+static constraints = {
+    photo contentType: 'png'
+}
+----
+
+=== Multiple Content Types
+
+[source,groovy]
+----
+static constraints = {
+    photo contentType: ['png', 'jpg', 'jpeg', 'gif', 'webp']
+}
+----
+
+=== MIME Type Validation
+
+You can also use full MIME types:
+
+[source,groovy]
+----
+static constraints = {
+    document contentType: ['application/pdf', 'application/msword', 'text/plain']
+}
+----
+
+=== File Size Validation
+
+Limit the maximum file size in bytes:
+
+[source,groovy]
+----
+static constraints = {
+    // 5MB maximum
+    photo fileSize: 5 * 1024 * 1024
+    
+    // Or be more explicit
+    avatar fileSize: [max: 2 * 1024 * 1024] // 2MB
+}
+----
+
+=== Combined Validation
+
+[source,groovy]
+----
+static constraints = {
+    photo(
+        contentType: ['png', 'jpg', 'jpeg'],
+        fileSize: 10 * 1024 * 1024, // 10MB
+        nullable: false
+    )
+}
+----
+
+== Storage Path Customization
+
+The `path` configuration supports several placeholders for dynamic path generation:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            storage {
+                path = 'uploads/:class/:id/:propertyName/:style/:filename'
+                bucket = 'my-bucket'
+            }
+        }
+    }
+}
+----
+
+=== Available Placeholders
+
+* `:class` - Domain class name (e.g., "book")
+* `:id` - Domain instance ID
+* `:propertyName` - Property name (e.g., "photo")
+* `:style` - Image style name (e.g., "thumbnail", "medium")
+* `:filename` - Original filename
+
+=== Example Path Results
+
+With the path `uploads/:class/:id/:propertyName/:style/:filename` and a Book with ID 123 and a photo named "cover.jpg":
+
+* Original: `uploads/book/123/photo/original/cover.jpg`
+* Thumbnail: `uploads/book/123/photo/thumbnail/cover.jpg`
+* Medium: `uploads/book/123/photo/medium/cover.jpg`
+
+== Manual Attachment Conversion
+
+You can manually convert a `MultipartFile` to an `Attachment`:
+
+=== In a Service
+
+[source,groovy]
+----
+import com.bertramlabs.plugins.selfie.Attachment
+import com.bertramlabs.plugins.selfie.AttachmentValueConverter
+import org.springframework.web.multipart.MultipartFile
+
+class PhotoService {
+    
+    def uploadPhoto(String title, MultipartFile file) {
+        def photo = new AttachmentValueConverter().convert(file)
+        
+        def book = new Book(title: title, photo: photo)
+        if (book.save()) {
+            return book
+        } else {
+            throw new RuntimeException("Failed to save book: ${book.errors}")
+        }
+    }
+    
+    def replacePhoto(Long bookId, MultipartFile file) {
+        def book = Book.get(bookId)
+        if (!book) {
+            throw new RuntimeException("Book not found")
+        }
+        
+        book.photo = new AttachmentValueConverter().convert(file)
+        book.save(flush: true)
+        
+        return book
+    }
+}
+----
+
+=== Direct File Upload
+
+You can also create attachments from byte arrays or input streams:
+
+[source,groovy]
+----
+import com.bertramlabs.plugins.selfie.Attachment
+
+class FileService {
+    
+    def createFromBytes(byte[] data, String filename, String contentType) {
+        def attachment = new Attachment(
+            fileName: filename,
+            contentType: contentType
+        )
+        attachment.inputStream = new ByteArrayInputStream(data)
+        
+        return attachment
+    }
+    
+    def createFromUrl(String imageUrl) {
+        URL url = new URL(imageUrl)
+        def connection = url.openConnection()
+        
+        def attachment = new Attachment(
+            fileName: url.file.tokenize('/').last(),
+            contentType: connection.contentType
+        )
+        attachment.inputStream = connection.inputStream
+        
+        return attachment
+    }
+}
+----
+
+== Accessing File URLs and Metadata
+
+=== Getting File URLs
+
+[source,groovy]
+----
+def book = Book.get(1)
+
+// Original image URL
+String originalUrl = book.photo.url
+
+// Specific style URL
+String thumbnailUrl = book.photo.thumbnail.url
+
+// In a controller
+render view: 'show', model: [book: book, photoUrl: book.photo.url]
+----
+
+=== File Metadata
+
+Access various properties of uploaded files:
+
+[source,groovy]
+----
+def book = Book.get(1)
+def photo = book.photo
+
+println "Filename: ${photo.fileName}"
+println "Content Type: ${photo.contentType}"
+println "File Size: ${photo.fileSize} bytes"
+println "Original URL: ${photo.url}"
+
+// Check if file exists
+if (photo.exists()) {
+    println "File exists in storage"
+}
+
+// Get all available styles
+photo.styles.each { styleName, styleAttachment ->
+    println "Style: ${styleName}, URL: ${styleAttachment.url}"
+}
+----
+
+=== In GSP Views
+
+[source,xml]
+----
+<g:if test="${book.photo}">
+    <div class="photo-container">
+        <img src="${book.photo.thumbnail.url}" 
+             alt="${book.name}"
+             class="thumbnail"/>
+        
+        <a href="${book.photo.url}" target="_blank">View Full Size</a>
+        
+        <ul class="available-sizes">
+            <li><a href="${book.photo.thumbnail.url}">Thumbnail</a></li>
+            <li><a href="${book.photo.medium.url}">Medium</a></li>
+            <li><a href="${book.photo.url}">Original</a></li>
+        </ul>
+    </div>
+</g:if>
+<g:else>
+    <p>No photo available</p>
+</g:else>
+----
+
+== Programmatic File Management
+
+=== Deleting Attachments
+
+When you delete a domain instance with attachments, Selfie automatically removes the files:
+
+[source,groovy]
+----
+def book = Book.get(1)
+book.delete() // Automatically deletes photo files from storage
+----
+
+To remove just the attachment:
+
+[source,groovy]
+----
+def book = Book.get(1)
+book.photo = null
+book.save() // Removes the attachment but keeps the book record
+----
+
+=== Replacing Attachments
+
+Simply assign a new file:
+
+[source,groovy]
+----
+def book = Book.get(1)
+book.photo = new AttachmentValueConverter().convert(newFile)
+book.save() // Old photo is replaced
+----
+
+=== Copying Attachments
+
+[source,groovy]
+----
+class BookService {
+    
+    def duplicateBook(Long bookId) {
+        def original = Book.get(bookId)
+        def copy = new Book(name: original.name + " (Copy)")
+        
+        // Clone the attachment
+        if (original.photo) {
+            copy.photo = original.photo.clone()
+        }
+        
+        copy.save()
+        return copy
+    }
+}
+----
+
+== Multiple Attachments
+
+You can have multiple attachment properties on a single domain:
+
+[source,groovy]
+----
+import com.bertramlabs.plugins.selfie.Attachment
+
+class Product {
+    String name
+    Attachment mainImage
+    Attachment gallery1
+    Attachment gallery2
+    Attachment gallery3
+    Attachment productSheet // PDF
+
+    static attachmentOptions = [
+        mainImage: [
+            styles: [
+                thumbnail: [width: 100, height: 100, mode: 'crop'],
+                large: [width: 800, mode: 'scale']
+            ]
+        ],
+        gallery1: [
+            styles: [
+                thumbnail: [width: 150, height: 150, mode: 'fit'],
+                medium: [width: 500, mode: 'scale']
+            ]
+        ],
+        gallery2: [
+            styles: [
+                thumbnail: [width: 150, height: 150, mode: 'fit'],
+                medium: [width: 500, mode: 'scale']
+            ]
+        ],
+        gallery3: [
+            styles: [
+                thumbnail: [width: 150, height: 150, mode: 'fit'],
+                medium: [width: 500, mode: 'scale']
+            ]
+        ]
+    ]
+
+    static embedded = ['mainImage', 'gallery1', 'gallery2', 'gallery3', 'productSheet']
+
+    static constraints = {
+        mainImage contentType: ['png', 'jpg', 'jpeg'], fileSize: 5 * 1024 * 1024
+        gallery1 nullable: true, contentType: ['png', 'jpg', 'jpeg']
+        gallery2 nullable: true, contentType: ['png', 'jpg', 'jpeg']
+        gallery3 nullable: true, contentType: ['png', 'jpg', 'jpeg']
+        productSheet nullable: true, contentType: ['application/pdf']
+    }
+}
+----
+
+=== Upload Form
+
+[source,xml]
+----
+<g:uploadForm name="productForm" url="[action:'save', controller:'product']">
+    <g:textField name="name" placeholder="Product Name"/><br/>
+    
+    <label>Main Image:</label>
+    <input type="file" name="mainImage" accept="image/*"/><br/>
+    
+    <label>Gallery Images:</label>
+    <input type="file" name="gallery1" accept="image/*"/><br/>
+    <input type="file" name="gallery2" accept="image/*"/><br/>
+    <input type="file" name="gallery3" accept="image/*"/><br/>
+    
+    <label>Product Sheet (PDF):</label>
+    <input type="file" name="productSheet" accept="application/pdf"/><br/>
+    
+    <g:submitButton name="save" value="Save Product"/>
+</g:uploadForm>
+----
+
+== Working with Collections
+
+For dynamic galleries, consider storing a list of image identifiers and using a separate domain:
+
+[source,groovy]
+----
+class Product {
+    String name
+    Attachment mainImage
+    
+    static hasMany = [galleryImages: GalleryImage]
+    static embedded = ['mainImage']
+}
+
+class GalleryImage {
+    Attachment image
+    Integer sortOrder
+    
+    static belongsTo = [product: Product]
+    static embedded = ['image']
+    
+    static attachmentOptions = [
+        image: [
+            styles: [
+                thumbnail: [width: 150, height: 150, mode: 'crop'],
+                medium: [width: 600, mode: 'scale']
+            ]
+        ]
+    ]
+}
+----
+
+== Security Considerations
+
+=== Private Files
+
+For secure file storage, configure your storage provider with private ACLs:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            storage {
+                defaultFileACL = 'Private' // Options: Private, PublicRead
+            }
+        }
+    }
+}
+----
+
+=== Signed URLs
+
+For AWS S3, you can generate temporary signed URLs:
+
+[source,groovy]
+----
+import com.bertramlabs.plugins.karman.CloudFile
+
+class DocumentService {
+    
+    def getSecureDownloadUrl(Document document, Integer expirySeconds = 3600) {
+        // This requires the CloudFile reference
+        CloudFile file = document.attachment.cloudFile
+        
+        // Generate signed URL valid for specified duration
+        return file.getURL(expirySeconds)
+    }
+}
+----
+
+=== File Type Verification
+
+Beyond content type constraints, consider verifying file contents:
+
+[source,groovy]
+----
+import org.apache.tika.Tika
+
+class FileValidationService {
+    
+    def validateFileType(MultipartFile file) {
+        Tika tika = new Tika()
+        String detectedType = tika.detect(file.inputStream)
+        
+        def allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
+        
+        if (!allowedTypes.contains(detectedType)) {
+            throw new RuntimeException("Invalid file type: ${detectedType}")
+        }
+        
+        return true
+    }
+}
+----
+
+Add Tika dependency:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.apache.tika:tika-core:2.9.0'
+}
+----
+
+== Environment-Specific Configuration
+
+Use different storage providers for different environments:
+
+[source,groovy]
+----
+environments {
+    development {
+        grails.plugin.selfie.storage.providerOptions {
+            provider = 'local'
+            basePath = 'storage'
+            baseUrl = 'http://localhost:8080/storage'
+        }
+    }
+    
+    test {
+        grails.plugin.selfie.storage.providerOptions {
+            provider = 'local'
+            basePath = '/tmp/test-storage'
+            baseUrl = 'http://localhost:8080/storage'
+        }
+    }
+    
+    production {
+        grails.plugin.selfie.storage.providerOptions {
+            provider = 's3'
+            accessKey = System.getenv('AWS_ACCESS_KEY')
+            secretKey = System.getenv('AWS_SECRET_KEY')
+            region = 'us-east-1'
+        }
+    }
+}
+----
+
+== Performance Tips
+
+=== Lazy Loading
+
+Attachments are stored as embedded objects, so they're loaded with the domain instance. For large collections, consider pagination:
+
+[source,groovy]
+----
+def products = Product.list(max: 20, offset: params.offset ?: 0)
+----
+
+=== Async Processing
+
+For large images, consider processing styles asynchronously:
+
+[source,groovy]
+----
+import grails.async.Promise
+import static grails.async.Promises.task
+
+class ProductService {
+    
+    def saveProductAsync(Product product) {
+        // Save with original only
+        product.save(flush: true)
+        
+        // Process styles in background
+        task {
+            product.mainImage.processStyles()
+        }
+        
+        return product
+    }
+}
+----
+
+=== CDN Usage
+
+For production, use a CDN in front of your S3 bucket:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            storage {
+                providerOptions {
+                    provider = 's3'
+                    accessKey = System.getenv('AWS_ACCESS_KEY')
+                    secretKey = System.getenv('AWS_SECRET_KEY')
+                    region = 'us-east-1'
+                }
+                // Override base URL to use CloudFront
+                cdnUrl = 'https://d1234567890.cloudfront.net'
+            }
+        }
+    }
+}
+----
+
+== Troubleshooting
+
+=== Files Not Saving
+
+Check that:
+
+1. Your domain has `static embedded = ['attachmentProperty']`
+2. You're calling `save()` on the domain instance
+3. Storage provider credentials are correct
+4. Bucket/directory permissions allow writes
+
+=== Images Not Resizing
+
+Verify:
+
+1. imgscalr is on the classpath (included with Selfie)
+2. The uploaded file is a valid image format
+3. Style configuration is in `attachmentOptions` not `constraints`
+
+=== URLs Not Working
+
+Ensure:
+
+1. For local storage: Karman `serveLocalStorage` is enabled
+2. For S3: Bucket ACLs allow public read (if needed)
+3. `baseUrl` is correctly configured
+
+=== Memory Issues with Large Files
+
+Use streaming instead of loading entire files:
+
+[source,groovy]
+----
+// Instead of:
+cloudFile.bytes = file.bytes
+
+// Use:
+cloudFile.inputStream = file.inputStream
+----

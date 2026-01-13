@@ -1,0 +1,284 @@
+= Selfie Documentation
+:toc: left
+:toclevels: 3
+:source-highlighter: coderay
+:icons: font
+
+== Introduction
+
+Selfie is a Grails Image / File Upload Plugin that provides a simple and elegant way to attach files to your domain models, upload to a CDN, validate content, and produce thumbnails. Built on top of https://github.com/bertramdev/karman-core[Karman], Selfie offers a powerful yet intuitive API for handling file uploads in Grails applications.
+
+=== Key Features
+
+* *Domain Attachment*: Seamlessly attach files to your GORM domain models
+* *CDN Storage*: Upload files to various cloud storage providers via Karman (AWS S3, Azure, Google Cloud, etc.)
+* *Image Resizing*: Automatic thumbnail generation using imgscalr
+* *Content Type Validation*: Ensure uploaded files meet your security and format requirements
+* *GORM Integration*: Built-in support for GORM bindings and Hibernate User Types
+* *Flexible Configuration*: Configure storage per domain, per property, or globally
+
+=== Supported Storage Providers
+
+Through Karman integration, Selfie supports:
+
+* **AWS S3** - Amazon Web Services Simple Storage Service
+* **Azure Blob Storage** - Microsoft Azure cloud storage
+* **Google Cloud Storage** - Google Cloud Platform storage
+* **Local File System** - Local disk storage
+* **CIFS/SMB** - Network file shares
+* And more through Karman providers
+
+== Installation
+
+=== Grails 7
+
+Add Selfie to your `build.gradle`:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'cloud.wondrify:selfie:{project-version}'
+    // Add storage provider dependencies as needed
+    implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT' // For AWS S3
+}
+----
+
+=== Grails 6.x and Earlier
+
+For Grails 6.x and earlier versions, use Selfie 6.x:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'com.bertramlabs.plugins:selfie:6.0.0'
+}
+----
+
+== Quick Start
+
+Here's a simple example to get you started:
+
+[source,groovy]
+----
+import com.bertramlabs.plugins.selfie.Attachment
+
+class Book {
+    String name
+    Attachment photo
+
+    static attachmentOptions = [
+        photo: [
+            styles: [
+                thumb: [width: 50, height: 50, mode: 'fit'],
+                medium: [width: 250, height: 250, mode: 'scale']
+            ]
+        ]
+    ]
+
+    static embedded = ['photo'] // Required for embedded attachments
+
+    static constraints = {
+        photo contentType: ['png','jpg'], fileSize: 1024*1024 // 1MB max
+    }
+}
+----
+
+Upload in a GSP:
+
+[source,xml]
+----
+<g:uploadForm name="upload" url="[action:'upload', controller:'book']">
+    <g:textField name="name" placeholder="Book Title"/><br/>
+    <input type="file" name="photo" /><br/>
+    <g:submitButton name="update" value="Upload" />
+</g:uploadForm>
+----
+
+Handle in controller:
+
+[source,groovy]
+----
+class BookController {
+    def upload() {
+        def book = new Book(params)
+        if (book.save()) {
+            redirect action: 'show', id: book.id
+        } else {
+            render view: 'create', model: [book: book]
+        }
+    }
+}
+----
+
+== Configuration
+
+=== Basic Configuration
+
+Configure Selfie in your `application.yml` or `application.groovy`:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            storage {
+                path = 'uploads/:class/:id/:propertyName/'
+                bucket = 'uploads'
+                providerOptions {
+                    provider = 'local'
+                    basePath = 'storage'
+                    baseUrl = 'http://localhost:8080/storage'
+                }
+            }
+        }
+    }
+}
+----
+
+=== AWS S3 Configuration
+
+To use AWS S3 as your storage backend:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            storage {
+                path = 'uploads/:class/:id/:propertyName/'
+                bucket = 'my-app-uploads'
+                providerOptions {
+                    provider = 's3'
+                    accessKey = System.getenv('AWS_ACCESS_KEY')
+                    secretKey = System.getenv('AWS_SECRET_KEY')
+                    region = 'us-east-1'
+                }
+            }
+        }
+    }
+}
+----
+
+=== Local Storage with Karman Serving
+
+For local development, you can use Karman's built-in file serving:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        karman {
+            serveLocalStorage = true
+            serveLocalMapping = 'storage'
+            storagePath = 'storage'
+        }
+        selfie {
+            storage {
+                path = 'uploads/:class/:id/:propertyName/'
+                bucket = 'uploads'
+                providerOptions {
+                    provider = 'local'
+                    basePath = 'storage'
+                    baseUrl = 'http://localhost:8080/storage'
+                }
+            }
+        }
+    }
+}
+----
+
+This makes files accessible at `/storage/uploads/...`
+
+=== Per-Domain Configuration
+
+You can configure storage settings for specific domains:
+
+[source,groovy]
+----
+grails {
+    plugin {
+        selfie {
+            domain {
+                book {
+                    storage {
+                        path = 'books/:id/:propertyName/'
+                        bucket = 'book-uploads'
+                        providerOptions {
+                            provider = 's3'
+                            accessKey = System.getenv('AWS_ACCESS_KEY')
+                            secretKey = System.getenv('AWS_SECRET_KEY')
+                            region = 'us-west-2'
+                        }
+                    }
+                }
+                userProfile {
+                    storage {
+                        path = 'profiles/:id/:propertyName/'
+                        bucket = 'user-profiles'
+                        providerOptions {
+                            provider = 's3'
+                            accessKey = System.getenv('AWS_ACCESS_KEY')
+                            secretKey = System.getenv('AWS_SECRET_KEY')
+                            region = 'us-west-2'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+== Advanced Usage
+
+For detailed information on advanced features, see link:advanced.html[Advanced Usage].
+
+Topics covered in the advanced guide:
+
+* Image Style Options and Resizing Modes
+* Content Type Validation
+* Custom Storage Paths
+* Manual Attachment Conversion
+* Accessing File URLs
+* Programmatic File Management
+* Multiple Attachments
+* Security Considerations
+
+== Migration Guide
+
+=== Upgrading to Grails 7
+
+If you're upgrading from Selfie 6.x to 7.x for Grails 7:
+
+1. Update your dependency group ID from `com.bertramlabs.plugins` to `cloud.wondrify`:
++
+[source,groovy]
+----
+// Old (Grails 6)
+implementation 'com.bertramlabs.plugins:selfie:6.0.0'
+
+// New (Grails 7)
+implementation 'cloud.wondrify:selfie:7.0.0-SNAPSHOT'
+----
+
+2. Update any Karman dependencies similarly:
++
+[source,groovy]
+----
+// Old
+implementation 'com.bertramlabs.plugins:karman-aws:2.x.x'
+
+// New
+implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT'
+----
+
+3. The API remains the same, so your existing Selfie code should work without changes.
+
+== Getting Help
+
+* GitHub Issues: https://github.com/bertramdev/selfie
+* Karman Documentation: https://bertramdev.github.io/karman-core/
+
+== License
+
+Selfie is open source software licensed under the Apache License 2.0.

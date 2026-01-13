@@ -9,14 +9,32 @@ Selfie is a Grails Image / File Upload Plugin. Use Selfie to attach files to you
 * Content Type Validation
 * GORM Bindings / Hibernate User Types Support
 
+## Documentation
+
+📚 **[Full Documentation](https://bertramdev.github.io/selfie/)** - Comprehensive guides and API reference
+
 Installation
 ------------
 
-Add The Following to your `build.gradle`:
+### Grails 7
+
+Add the following to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'com.bertramlabs.plugins:selfie:7.0.0-SNAPSHOT'
+    implementation 'cloud.wondrify:selfie:7.0.0-SNAPSHOT'
+    // Add storage provider as needed
+    implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT' // For AWS S3
+}
+```
+
+### Grails 6.x and Earlier
+
+For Grails 6.x and earlier versions, use the previous artifact coordinates:
+
+```groovy
+dependencies {
+    implementation 'com.bertramlabs.plugins:selfie:6.0.0'
 }
 ```
 

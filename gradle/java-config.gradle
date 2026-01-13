@@ -12,7 +12,7 @@ tasks.named('javadocJar', Jar) {
 
 tasks.withType(Jar).configureEach {
 	manifest.attributes(
-					'Implementation-Title': 'Karman',
+					'Implementation-Title': 'Selfie',
 					'Implementation-Version': project.version,
 					'Implementation-Vendor': "${project.group}:${findProperty('pomArtifactId') ?: project.name}"
 	)

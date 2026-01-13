@@ -1,6 +1,7 @@
 apply plugin: 'java'
-apply plugin: 'org.apache.grails.gradle.grails-publish'
 apply plugin: 'groovy'
+apply plugin: 'org.apache.grails.gradle.grails-publish'
+apply plugin: 'org.apache.grails.gradle.grails-plugin'
 apply plugin: 'java-library'
 
 group "cloud.wondrify"
