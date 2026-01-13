@@ -20,7 +20,7 @@ After building, open `selfie-docs/build/docs/index.html` in your browser.
 
 Documentation is automatically published to GitHub Pages when changes are pushed to the `master` or `main` branch via the `.github/workflows/publish-docs.yml` workflow.
 
-The published documentation is available at: https://bertramdev.github.io/selfie/
+The published documentation is available at: https://wondrify.github.io/selfie/
 
 ## Structure
 

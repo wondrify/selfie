@@ -6,7 +6,7 @@
 
 == Introduction
 
-Selfie is a Grails Image / File Upload Plugin that provides a simple and elegant way to attach files to your domain models, upload to a CDN, validate content, and produce thumbnails. Built on top of https://github.com/bertramdev/karman-core[Karman], Selfie offers a powerful yet intuitive API for handling file uploads in Grails applications.
+Selfie is a Grails Image / File Upload Plugin that provides a simple and elegant way to attach files to your domain models, upload to a CDN, validate content, and produce thumbnails. Built on top of https://github.com/wondrify/karman-core[Karman], Selfie offers a powerful yet intuitive API for handling file uploads in Grails applications.
 
 === Key Features
 
@@ -116,6 +116,24 @@ class BookController {
 
 Configure Selfie in your `application.yml` or `application.groovy`:
 
+==== YAML Configuration (application.yml)
+
+[source,yaml]
+----
+grails:
+  plugin:
+    selfie:
+      storage:
+        path: 'uploads/:class/:id/:propertyName/'
+        bucket: uploads
+        providerOptions:
+          provider: local
+          basePath: storage
+          baseUrl: 'http://localhost:8080/storage'
+----
+
+==== Groovy Configuration (application.groovy)
+
 [source,groovy]
 ----
 grails {
@@ -138,6 +156,25 @@ grails {
 === AWS S3 Configuration
 
 To use AWS S3 as your storage backend:
+
+==== YAML Configuration (application.yml)
+
+[source,yaml]
+----
+grails:
+  plugin:
+    selfie:
+      storage:
+        path: 'uploads/:class/:id/:propertyName/'
+        bucket: my-app-uploads
+        providerOptions:
+          provider: s3
+          accessKey: '${AWS_ACCESS_KEY}'
+          secretKey: '${AWS_SECRET_KEY}'
+          region: us-east-1
+----
+
+==== Groovy Configuration (application.groovy)
 
 [source,groovy]
 ----
@@ -162,6 +199,28 @@ grails {
 === Local Storage with Karman Serving
 
 For local development, you can use Karman's built-in file serving:
+
+==== YAML Configuration (application.yml)
+
+[source,yaml]
+----
+grails:
+  plugin:
+    karman:
+      serveLocalStorage: true
+      serveLocalMapping: storage
+      storagePath: storage
+    selfie:
+      storage:
+        path: 'uploads/:class/:id/:propertyName/'
+        bucket: uploads
+        providerOptions:
+          provider: local
+          basePath: storage
+          baseUrl: 'http://localhost:8080/storage'
+----
+
+==== Groovy Configuration (application.groovy)
 
 [source,groovy]
 ----
@@ -192,6 +251,36 @@ This makes files accessible at `/storage/uploads/...`
 === Per-Domain Configuration
 
 You can configure storage settings for specific domains:
+
+==== YAML Configuration (application.yml)
+
+[source,yaml]
+----
+grails:
+  plugin:
+    selfie:
+      domain:
+        book:
+          storage:
+            path: 'books/:id/:propertyName/'
+            bucket: book-uploads
+            providerOptions:
+              provider: s3
+              accessKey: '${AWS_ACCESS_KEY}'
+              secretKey: '${AWS_SECRET_KEY}'
+              region: us-west-2
+        userProfile:
+          storage:
+            path: 'profiles/:id/:propertyName/'
+            bucket: user-profiles
+            providerOptions:
+              provider: s3
+              accessKey: '${AWS_ACCESS_KEY}'
+              secretKey: '${AWS_SECRET_KEY}'
+              region: us-west-2
+----
+
+==== Groovy Configuration (application.groovy)
 
 [source,groovy]
 ----
@@ -276,8 +365,8 @@ implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT'
 
 == Getting Help
 
-* GitHub Issues: https://github.com/bertramdev/selfie
-* Karman Documentation: https://bertramdev.github.io/karman-core/
+* GitHub Issues: https://github.com/wondrify/selfie
+* Karman Documentation: https://wondrify.github.io/karman-core/
 
 == License
 

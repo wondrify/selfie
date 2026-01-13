@@ -11,7 +11,7 @@ Selfie is a Grails Image / File Upload Plugin. Use Selfie to attach files to you
 
 ## Documentation
 
-📚 **[Full Documentation](https://bertramdev.github.io/selfie/)** - Comprehensive guides and API reference
+📚 **[Full Documentation](https://wondrify.github.io/selfie/)** - Comprehensive guides and API reference
 
 Installation
 ------------
