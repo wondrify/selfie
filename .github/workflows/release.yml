@@ -71,7 +71,6 @@ jobs:
           ./gradlew
           -Psigning.secretKeyRingFile=${{ github.workspace }}/secring.gpg
           publishMavenPublicationToSonatypeRepository
-          publishPluginMavenPublicationToSonatypeRepository 
           closeSonatypeStagingRepository
       - name: "Generate Build Date file"
         run: echo "$SOURCE_DATE_EPOCH" >> build/BUILD_DATE.txt
@@ -81,53 +80,10 @@ jobs:
           files: build/BUILD_DATE.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  gradlePlugin:
-    name: "Release Gradle Plugin"
-    environment: gradlePlugin
-    needs: [publish]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "📥 Checkout repository"
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: rel-${{ needs.publish.outputs.release_version }}
-      - name: "Download BUILD_DATE.txt and rename to BUILD_DATE"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          release_url=$(gh release view ${{ github.ref_name }} --json assets --repo ${{ github.repository }} --jq '.assets[] | select(.name == "BUILD_DATE.txt") | .url')
-          curl -L -H "Authorization: token $GH_TOKEN" -o BUILD_DATE "$release_url"
-      - name: "Ensure source files use common date"
-        run: |
-          SOURCE_DATE_EPOCH=$(cat BUILD_DATE)
-          find . -depth \( -type f -o -type d \) -exec touch -d "@${SOURCE_DATE_EPOCH}" {} +
-      - name: "☕️ Setup JDK"
-        uses: actions/setup-java@v4
-        with:
-          distribution: liberica
-          java-version: ${{ env.JAVA_VERSION }}
-      - name: "🐘 Setup Gradle"
-        uses: gradle/actions/setup-gradle@v4
-      - name: "🔐 Generate key file for artifact signing"
-        env:
-          SECRING_FILE: ${{ secrets.SECRING_FILE }}
-        run: echo $SECRING_FILE | base64 -d > ${{ github.workspace }}/secring.gpg
-      - name: "🔨 Release Gradle Plugin"
-        run: >
-          ./gradlew
-          -Psigning.secretKeyRingFile=${{ github.workspace }}/secring.gpg
-          publishPlugins
-        env:
-          GRAILS_PUBLISH_RELEASE: 'true'
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSPHRASE: ${{ secrets.SECRING_PASSPHRASE }}
-          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_KEY }}
-          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_SECRET }}
   release:
     name: "Close Release"
     environment: release
-    needs: [publish, gradlePlugin]
+    needs: [publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
