@@ -6,10 +6,15 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    buildDocs = file('build/docs')
+    srcDocs = file('src/docs/asciidoc')
+}
+
 asciidoctor {
-    sourceDir = file('src/docs/asciidoc')
-    outputDir = file('build/docs')
-    
+    sourceDir = srcDocs
+    outputDir = buildDocs
+
     attributes = [
         'source-highlighter': 'coderay',
         'toc': 'left',
@@ -26,9 +31,10 @@ asciidoctor {
     ]
 }
 
-task copyDocs(type: Copy, dependsOn: asciidoctor) {
-    from asciidoctor.outputDir
+tasks.register("copyDocs", Copy) {
+    dependsOn(asciidoctor)
+    from buildDocs
     into file('build/gh-pages')
 }
 
-build.dependsOn copyDocs
+tasks.build.dependsOn copyDocs
