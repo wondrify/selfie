@@ -4,7 +4,7 @@ apply plugin: 'org.apache.grails.gradle.grails-publish'
 apply plugin: 'org.apache.grails.gradle.grails-plugin'
 apply plugin: 'java-library'
 
-group "cloud.wondrify"
+group = "cloud.wondrify"
 
 ext {
   pomDescription = 'Selfie is a Grails Image / File Upload Plugin. Use Selfie to attach files to your domain models, upload to a CDN, validate content, produce thumbnails.'
