@@ -22,9 +22,9 @@ Add the following to your `build.gradle`:
 
 ```groovy
 dependencies {
-    implementation 'cloud.wondrify:selfie:7.0.0-SNAPSHOT'
+    implementation 'cloud.wondrify:selfie:7.0.0'
     // Add storage provider as needed
-    implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT' // For AWS S3
+    implementation 'cloud.wondrify:karman-aws:3.0.3' // For AWS S3
 }
 ```
 

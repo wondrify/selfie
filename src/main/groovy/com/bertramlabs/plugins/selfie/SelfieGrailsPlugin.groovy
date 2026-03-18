@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 class SelfieGrailsPlugin extends Plugin {
 
     // the version or versions of Grails the plugin is designed for
-    def grailsVersion = "3.1.5 > *"
+    def grailsVersion = "7.0.0 > *"
 
     def title           = "Selfie Plugin"
     def author          = "David Estes"
