@@ -39,7 +39,7 @@ Add Selfie to your `build.gradle`:
 dependencies {
     implementation 'cloud.wondrify:selfie:{project-version}'
     // Add storage provider dependencies as needed
-    implementation 'cloud.wondrify:karman-aws:3.0.1-SNAPSHOT' // For AWS S3
+    implementation 'cloud.wondrify:karman-aws:3.0.3' // For AWS S3
 }
 ----
 
